@@ -19,9 +19,6 @@ spec:
         properties:
           spec:
             properties:
-              instances:
-                description: Number of Keycloak instances in HA mode. Default is 1.
-                type: integer
               transaction:
                 description: In this section you can find all properties related to
                   the settings of transaction behavior.
@@ -90,8 +87,6 @@ spec:
                           deletionGracePeriodSeconds:
                             type: integer
                           deletionTimestamp:
-                            type: string
-                          clusterName:
                             type: string
                           resourceVersion:
                             type: string
@@ -209,8 +204,6 @@ spec:
                                               type: integer
                                             deletionTimestamp:
                                               type: string
-                                            clusterName:
-                                              type: string
                                             resourceVersion:
                                               type: string
                                             annotations:
@@ -307,6 +300,17 @@ spec:
                                                 apiGroup:
                                                   type: string
                                               type: object
+                                            dataSourceRef:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                kind:
+                                                  type: string
+                                                namespace:
+                                                  type: string
+                                                apiGroup:
+                                                  type: string
+                                              type: object
                                             resources:
                                               properties:
                                                 limits:
@@ -316,6 +320,13 @@ spec:
                                                     - type: string
                                                     x-kubernetes-int-or-string: true
                                                   type: object
+                                                claims:
+                                                  items:
+                                                    properties:
+                                                      name:
+                                                        type: string
+                                                    type: object
+                                                  type: array
                                                 requests:
                                                   additionalProperties:
                                                     anyOf:
@@ -323,15 +334,6 @@ spec:
                                                     - type: string
                                                     x-kubernetes-int-or-string: true
                                                   type: object
-                                              type: object
-                                            dataSourceRef:
-                                              properties:
-                                                name:
-                                                  type: string
-                                                kind:
-                                                  type: string
-                                                apiGroup:
-                                                  type: string
                                               type: object
                                             accessModes:
                                               items:
@@ -1368,6 +1370,13 @@ spec:
                                         - type: string
                                         x-kubernetes-int-or-string: true
                                       type: object
+                                    claims:
+                                      items:
+                                        properties:
+                                          name:
+                                            type: string
+                                        type: object
+                                      type: array
                                     requests:
                                       additionalProperties:
                                         anyOf:
@@ -1387,6 +1396,20 @@ spec:
                                         type: string
                                     type: object
                                   type: array
+                              type: object
+                            type: array
+                          resourceClaims:
+                            items:
+                              properties:
+                                source:
+                                  properties:
+                                    resourceClaimTemplateName:
+                                      type: string
+                                    resourceClaimName:
+                                      type: string
+                                  type: object
+                                name:
+                                  type: string
                               type: object
                             type: array
                           automountServiceAccountToken:
@@ -1861,6 +1884,13 @@ spec:
                                         - type: string
                                         x-kubernetes-int-or-string: true
                                       type: object
+                                    claims:
+                                      items:
+                                        properties:
+                                          name:
+                                            type: string
+                                        type: object
+                                      type: array
                                     requests:
                                       additionalProperties:
                                         anyOf:
@@ -2352,6 +2382,13 @@ spec:
                                         - type: string
                                         x-kubernetes-int-or-string: true
                                       type: object
+                                    claims:
+                                      items:
+                                        properties:
+                                          name:
+                                            type: string
+                                        type: object
+                                      type: array
                                     requests:
                                       additionalProperties:
                                         anyOf:
@@ -2721,12 +2758,20 @@ spec:
                           topologySpreadConstraints:
                             items:
                               properties:
+                                nodeTaintsPolicy:
+                                  type: string
                                 topologyKey:
                                   type: string
                                 maxSkew:
                                   type: integer
+                                nodeAffinityPolicy:
+                                  type: string
                                 whenUnsatisfiable:
                                   type: string
+                                matchLabelKeys:
+                                  items:
+                                    type: string
+                                  type: array
                                 labelSelector:
                                   properties:
                                     matchExpressions:
@@ -2747,6 +2792,8 @@ spec:
                                         type: string
                                       type: object
                                   type: object
+                                minDomains:
+                                  type: integer
                               type: object
                             type: array
                           overhead:
@@ -2773,8 +2820,17 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          schedulingGates:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                              type: object
+                            type: array
                           runtimeClassName:
                             type: string
+                          hostUsers:
+                            type: boolean
                         type: object
                     type: object
                 type: object
@@ -2783,12 +2839,23 @@ spec:
                   The deployment is, by default, exposed through a basic ingress.
                   You can change this behaviour by setting the enabled property to false.
                 properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Additional annotations to be appended to the Ingress
+                      object
+                    type: object
                   enabled:
                     type: boolean
+                  className:
+                    type: string
                 type: object
               image:
                 description: Custom Keycloak image to be used.
                 type: string
+              instances:
+                description: Number of Keycloak instances in HA mode. Default is 1.
+                type: integer
               imagePullSecrets:
                 description: Secret(s) that might be used when pulling an image from
                   a private container image registry or repository.
@@ -2902,16 +2969,30 @@ spec:
                 items:
                   properties:
                     status:
-                      type: boolean
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                    observedGeneration:
+                      type: integer
                     type:
                       type: string
                     message:
                       type: string
                   type: object
                 type: array
+              observedGeneration:
+                type: integer
+              instances:
+                type: integer
+              selector:
+                type: string
             type: object
         type: object
     served: true
     storage: true
     subresources:
+      scale:
+        labelSelectorPath: .status.selector
+        specReplicasPath: .spec.instances
+        statusReplicasPath: .status.instances
       status: {}
